@@ -2,6 +2,8 @@
 
 Renders natively on GitHub.
 
+> 🔗 **Interactive Schema:** [Explore this diagram interactively on dbdiagram.io](https://dbdiagram.io/d/6a9dadfe5450bea1be01caa6)
+
 ```mermaid
 erDiagram
     DIM_DATE     ||--o{ FACT_SALES : "sold on"
@@ -78,3 +80,8 @@ erDiagram
         text loyalty_status
     }
 ```
+
+## Interactive diagram
+
+View and explore this schema interactively:
+- **dbdiagram.io**: [https://dbdiagram.io/d/6a9dadfe5450bea1be01caa6](https://dbdiagram.io/d/6a9dadfe5450bea1be01caa6)
