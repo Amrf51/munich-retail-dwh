@@ -14,7 +14,7 @@ erDiagram
 
     FACT_SALES {
         bigint   sale_key           PK
-        uuid     transaction_id     UK "natural key (grain: 1 line item)"
+        text     transaction_id     UK "natural key (grain: 1 line item)"
         int      date_key           FK
         int      store_key          FK
         int      product_key        FK
