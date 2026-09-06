@@ -9,7 +9,9 @@ from rich.table import Table
 
 from .db import connect, wait_for_db
 from .extract import extract as run_extract
-from .extract import fetch_raw, finish_batch, raw_row_count
+from .extract import extract as run_extract_fn
+from .extract import fetch_raw, finish_batch, raw_row_count, start_batch
+from .load import load_all, mart_summary, unknown_member_usage
 from .migrate import run_migrations
 from .transform import flag_summary
 from .transform import transform as run_transform
@@ -81,6 +83,68 @@ def transform(batch: int = typer.Option(None, "--batch", help="Batch id to tag r
             "[dim]Flagged rows are loaded, not deleted. mart.vw_net_revenue "
             "decides what to exclude.[/dim]"
         )
+
+
+@app.command()
+def load() -> None:
+    """Load staging into the mart dimensions and fact. Safe to run repeatedly."""
+    wait_for_db()
+    with connect() as conn, conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) AS n FROM staging.sales_clean")
+        if cur.fetchone()["n"] == 0:
+            console.print("[yellow]staging.sales_clean is empty. Run `make transform` first.[/yellow]")
+            raise typer.Exit(code=1)
+
+    load_all()
+    _print_mart_summary()
+
+
+@app.command()
+def run(
+    csv: Path = typer.Option(DEFAULT_CSV, "--csv", help="Path to the source CSV"),
+) -> None:
+    """The whole pipeline: migrate, extract, transform, load."""
+    if not csv.exists():
+        raise typer.BadParameter(f"CSV not found at {csv}")
+
+    wait_for_db()
+    run_migrations()
+
+    batch_id = start_batch(csv.name)
+    console.rule(f"batch {batch_id}")
+
+    extracted = run_extract_fn(csv, batch_id=batch_id)
+    clean, rejects = run_transform(fetch_raw(), batch_id=batch_id)
+    staged = write_staging(clean)
+    rejected = write_rejects(rejects, batch_id)
+    load_all()
+
+    finish_batch(batch_id, extracted=extracted.rows_read, staged=staged, rejected=rejected)
+
+    console.rule("mart")
+    _print_mart_summary()
+    console.print("\n[green]Pipeline complete.[/green] "
+                  "Query [bold]mart.vw_net_revenue[/bold] to start.")
+
+
+def _print_mart_summary() -> None:
+    table = Table(title="Mart")
+    table.add_column("Table")
+    table.add_column("Rows", justify="right")
+    for r in mart_summary():
+        table.add_row(r["table_name"], f'{r["rows"]:,}')
+    console.print(table)
+
+    usage = [r for r in unknown_member_usage() if r["unknown_rows"]]
+    if usage:
+        table = Table(title="Rows resolved to the Unknown member")
+        table.add_column("Dimension")
+        table.add_column("Rows", justify="right")
+        table.add_column("Share", justify="right")
+        for r in usage:
+            table.add_row(r["dimension"], f'{r["unknown_rows"]:,}',
+                          f'{100 * r["unknown_rows"] / r["total_rows"]:.1f}%')
+        console.print(table)
 
 
 @app.command()

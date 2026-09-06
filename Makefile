@@ -39,10 +39,19 @@ batches:  ## Show recent load batches
 transform:  ## Transform raw into staging. Safe to run repeatedly.
 	$(UV) run munich-dwh transform
 
+load:  ## Load staging into the mart. Safe to run repeatedly.
+	$(UV) run munich-dwh load
+
+run:  ## Full pipeline: migrate -> extract -> transform -> load
+	$(UV) run munich-dwh run --csv data/munich_retail_sales_raw.csv
+
 inspect:  ## Show what the schema currently contains
 	$(UV) run munich-dwh inspect
+
+test:  ## Run automated warehouse validation tests
+	$(UV) run pytest tests/ -v
 
 psql:  ## Open a psql shell in the container
 	$(DOCKER) compose exec postgres psql -U $${POSTGRES_USER:-dwh} -d $${POSTGRES_DB:-munich_retail}
 
-.PHONY: help install up down nuke profile migrate extract batches transform inspect psql
+.PHONY: help install up down nuke profile migrate extract batches transform load run inspect test psql
