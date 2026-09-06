@@ -21,6 +21,14 @@ class Settings:
     password: str = os.getenv("POSTGRES_PASSWORD", "dwh")
     database: str = os.getenv("POSTGRES_DB", "munich_retail")
 
+    # Transform behaviour
+    quantity_outlier_threshold: int = int(os.getenv("QUANTITY_OUTLIER_THRESHOLD", "20"))
+    # When true, customer_name is replaced by a salted HMAC before it reaches the
+    # mart. Off by default because the agreed ERD carries customer_name; flipping it
+    # is a one-line change in .env, nothing else in the model moves.
+    pseudonymize_customers: bool = os.getenv("PSEUDONYMIZE_CUSTOMERS", "false").lower() == "true"
+    pseudonym_salt: str = os.getenv("PSEUDONYM_SALT", "dev-salt-change-me")
+
     @property
     def dsn(self) -> str:
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"

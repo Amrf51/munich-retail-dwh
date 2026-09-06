@@ -36,10 +36,13 @@ extract:  ## Load the CSV into raw.sales_raw. Safe to run repeatedly.
 batches:  ## Show recent load batches
 	$(UV) run munich-dwh batches
 
+transform:  ## Transform raw into staging. Safe to run repeatedly.
+	$(UV) run munich-dwh transform
+
 inspect:  ## Show what the schema currently contains
 	$(UV) run munich-dwh inspect
 
 psql:  ## Open a psql shell in the container
 	$(DOCKER) compose exec postgres psql -U $${POSTGRES_USER:-dwh} -d $${POSTGRES_DB:-munich_retail}
 
-.PHONY: help install up down nuke profile migrate extract batches inspect psql
+.PHONY: help install up down nuke profile migrate extract batches transform inspect psql

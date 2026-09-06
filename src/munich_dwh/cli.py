@@ -9,8 +9,11 @@ from rich.table import Table
 
 from .db import connect, wait_for_db
 from .extract import extract as run_extract
-from .extract import finish_batch, raw_row_count
+from .extract import fetch_raw, finish_batch, raw_row_count
 from .migrate import run_migrations
+from .transform import flag_summary
+from .transform import transform as run_transform
+from .transform import write_rejects, write_staging
 
 app = typer.Typer(add_completion=False, help="Munich retail sales warehouse")
 console = Console()
@@ -47,6 +50,37 @@ def extract(
     console.print(f"raw.sales_raw now holds [bold]{raw_row_count():,}[/bold] rows")
     if result.is_noop:
         console.print("[dim]Nothing new landed: every row was already present.[/dim]")
+
+
+@app.command()
+def transform(batch: int = typer.Option(None, "--batch", help="Batch id to tag rows with")) -> None:
+    """Transform raw.sales_raw into staging.sales_clean. Safe to run repeatedly."""
+    wait_for_db()
+
+    raw_rows = fetch_raw()
+    if not raw_rows:
+        console.print("[yellow]raw.sales_raw is empty. Run `make extract` first.[/yellow]")
+        raise typer.Exit(code=1)
+
+    clean, rejects = run_transform(raw_rows, batch_id=batch)
+    staged = write_staging(clean)
+    rejected = write_rejects(rejects, batch)
+
+    console.print(f"\nstaged [bold]{staged:,}[/bold] rows, quarantined [bold]{rejected:,}[/bold]")
+
+    summary = flag_summary()
+    if summary:
+        table = Table(title="Quality flags")
+        table.add_column("Flag")
+        table.add_column("Rows", justify="right")
+        table.add_column("% of staging", justify="right")
+        for name, count in summary:
+            table.add_row(name, f"{count:,}", f"{100 * count / staged:.1f}%")
+        console.print(table)
+        console.print(
+            "[dim]Flagged rows are loaded, not deleted. mart.vw_net_revenue "
+            "decides what to exclude.[/dim]"
+        )
 
 
 @app.command()
