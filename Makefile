@@ -30,10 +30,16 @@ profile:  ## Profile the source CSV and regenerate docs/profiling_findings.md
 migrate:  ## Deploy the schema. Safe to run repeatedly.
 	$(UV) run munich-dwh migrate
 
+extract:  ## Load the CSV into raw.sales_raw. Safe to run repeatedly.
+	$(UV) run munich-dwh extract --csv data/munich_retail_sales_raw.csv
+
+batches:  ## Show recent load batches
+	$(UV) run munich-dwh batches
+
 inspect:  ## Show what the schema currently contains
 	$(UV) run munich-dwh inspect
 
 psql:  ## Open a psql shell in the container
 	$(DOCKER) compose exec postgres psql -U $${POSTGRES_USER:-dwh} -d $${POSTGRES_DB:-munich_retail}
 
-.PHONY: help install up down nuke profile migrate inspect psql
+.PHONY: help install up down nuke profile migrate extract batches inspect psql
