@@ -86,6 +86,7 @@ The warehouse implements an ELT architecture separated into **4 distinct schemas
 
 ## Data Modeling & Design Decisions
 
+* **Data Assumptions & Decision Log:** [docs/assumptions.md](docs/assumptions.md)
 * **Schema ERD:** [docs/erd.md](docs/erd.md)
 * **Interactive Diagram:** [Explore on dbdiagram.io](https://dbdiagram.io/d/6a9dadfe5450bea1be01caa6)
 * **Source Data Profiling:** [docs/profiling_findings.md](docs/profiling_findings.md)

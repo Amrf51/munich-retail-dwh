@@ -2,7 +2,7 @@
 
 Renders natively on GitHub.
 
-> 🔗 **Interactive Schema:** [Explore this diagram interactively on dbdiagram.io](https://dbdiagram.io/d/6a9dadfe5450bea1be01caa6)
+> **Interactive Schema:** [Explore this diagram interactively on dbdiagram.io](https://dbdiagram.io/d/6a9dadfe5450bea1be01caa6)
 
 ```mermaid
 erDiagram
@@ -116,6 +116,8 @@ View and explore this schema interactively:
 ---
 
 ## Key Assumptions
+
+> **Full Decision Log:** For detailed rationale, risk assessments, and source metrics for all 20 assumptions, see [docs/assumptions.md](assumptions.md).
 
 1. **Transaction Grain over Invoice Grain**: 
    * Profiling found that of the 5,416 invoice numbers appearing on multiple rows, **99.6% had conflicting transaction dates, 83.3% had conflicting stores, and 60.2% had conflicting customers**. 
