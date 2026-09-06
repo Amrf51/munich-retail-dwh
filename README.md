@@ -98,6 +98,58 @@ The warehouse implements an ELT architecture separated into **4 distinct schemas
 
 ---
 
+## Analytical Serving Layer & Example Queries
+
+The warehouse exposes pre-aggregated and filtered views in `mart` to eliminate repetitive 5-table joins and encapsulate financial recognition logic:
+
+* **`mart.vw_net_revenue`**: Golden view for BI dashboards. Excludes canceled/returned items and corrupt/outlier records (`dq_flags`), providing **€6.68M** in clean recognized sales.
+* **`mart.vw_sales_enriched`**: Wide, pre-joined dimensional table for ad-hoc SQL analysis.
+* **`mart.vw_returns_and_cancellations`**: Operational view isolating non-recognized sales to investigate return rates.
+* **`mart.vw_dq_summary`**: Governance scorecard summarizing the 11 bitmask flags across all 35,612 rows.
+
+### Ready-to-Run Analytical Queries
+
+You can execute these directly in `make psql` or Adminer:
+
+#### 1. Net Revenue by Munich District & Store
+```sql
+SELECT 
+    district_name,
+    store_name,
+    store_type,
+    COUNT(DISTINCT transaction_id) AS transactions,
+    ROUND(SUM(total_amount), 2) AS net_revenue
+FROM mart.vw_net_revenue
+GROUP BY district_name, store_name, store_type
+ORDER BY net_revenue DESC;
+```
+
+#### 2. Customer Loyalty vs. Walk-In Revenue
+```sql
+SELECT 
+    CASE WHEN is_walk_in THEN 'Walk-in / Guest' ELSE loyalty_status END AS customer_segment,
+    COUNT(*) AS line_items,
+    ROUND(SUM(total_amount), 2) AS total_revenue,
+    ROUND(AVG(total_amount), 2) AS avg_line_item_spend
+FROM mart.vw_net_revenue
+GROUP BY 1
+ORDER BY total_revenue DESC;
+```
+
+#### 3. Return & Cancellation Rate by Product Category
+```sql
+SELECT 
+    category,
+    COUNT(*) FILTER (WHERE transaction_status = 'Completed') AS completed_lines,
+    COUNT(*) FILTER (WHERE transaction_status = 'Returned') AS returned_lines,
+    ROUND(100.0 * COUNT(*) FILTER (WHERE transaction_status = 'Returned') / COUNT(*), 2) AS return_rate_pct
+FROM mart.vw_sales_enriched
+GROUP BY category
+ORDER BY return_rate_pct DESC;
+```
+
+---
+
 ## Makefile Reference
 
 | Command | Action |

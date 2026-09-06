@@ -113,6 +113,20 @@ View and explore this schema interactively:
   * **Grain**: 1 row per customer (34 loyalty members + 1 Unknown/Walk-in placeholder).
   * **Purpose**: Tracks customer profile and loyalty tier (`loyalty_status`), with parsed `email_domain` for customer segmentation and support for GDPR pseudonymization.
 
+### Analytical Serving Views
+* **`mart.vw_net_revenue`**:
+  * **Target Audience**: Financial reporting, executive KPIs, BI dashboards.
+  * **Business Rules**: Pre-filters for recognized revenue (`transaction_status = 'Completed'`) and excludes quality outliers / corrupted rows (`(dq_flags & (1 | 2 | 4 | 16)) = 0`), delivering €6.68M in clean, trustworthy sales.
+* **`mart.vw_sales_enriched`**:
+  * **Target Audience**: Ad-hoc dimensional analysis and exploratory querying.
+  * **Purpose**: Wide denormalized view joining `fact_sales` across all 5 dimensions. Hides the snowflake join to `dim_supplier` and includes precomputed calendar indicators (`hour_of_day`, `is_weekend`, `is_bavarian_holiday`, `is_walk_in`).
+* **`mart.vw_returns_and_cancellations`**:
+  * **Target Audience**: Retail operations, cashier audit, product quality assurance.
+  * **Purpose**: Isolates non-revenue lines (`WHERE NOT is_revenue_recognized`) to analyze return rates, payment method refund patterns, and cancellation frequencies.
+* **`mart.vw_dq_summary`**:
+  * **Target Audience**: Data engineering & quality governance.
+  * **Purpose**: Real-time aggregation of the 11 bitmask flags across all 35,612 rows, showing anomaly counts and percentages across the warehouse.
+
 ---
 
 ## Key Assumptions
